@@ -1,0 +1,7 @@
+section#About{background-image:linear-gradient(rgb(2,2,2),rgba(0,0,0,.543)),url("../img/HUD.gif");background-attachment:fixed;background-position:center center;background-size:cover}
+.scene:first-child .movie .poster{background-image:url(../img/poster01.png)}
+.scene:nth-child(2) .poster{background-image:url(../img/poster02.png)}
+.scene:nth-child(3) .poster,.scene:nth-child(4) .poster{background-image:url(../img/poster03.png)}
+.scene:first-child .info header{background-image:url(../img/still01.png)}
+.scene:nth-child(2) .info header{background-image:url(../img/still02.png)}
+.scene:nth-child(3) .info header,.scene:nth-child(4) .info header{background-image:url(../img/still03.png)}
