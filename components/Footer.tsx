@@ -1,10 +1,19 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
+
+const EMAIL_REGEX = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/
 
 export default function Footer() {
   const [currentYear, setCurrentYear] = useState<number>(new Date().getFullYear())
   const [viewerCount, setViewerCount] = useState<number>(1)
+
+  // Newsletter subscription state
+  const [newsletterEmail, setNewsletterEmail] = useState<string>('')
+  const [newsletterStatus, setNewsletterStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
+  const [newsletterError, setNewsletterError] = useState<string>('')
+  const [newsletterSuccess, setNewsletterSuccess] = useState<string>('')
+  const emailInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     setCurrentYear(new Date().getFullYear())
@@ -32,6 +41,90 @@ export default function Footer() {
     const interval = setInterval(fetchPresence, 30000)
     return () => clearInterval(interval)
   }, [])
+
+  const validateEmail = (val: string): string => {
+    const trimmed = val.trim()
+    if (!trimmed) {
+      return 'Email address is required.'
+    }
+    if (trimmed.length > 254 || !EMAIL_REGEX.test(trimmed)) {
+      return 'Please enter a valid email address (e.g. name@example.com).'
+    }
+    return ''
+  }
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value
+    setNewsletterEmail(val)
+    if (newsletterStatus === 'error') {
+      const err = validateEmail(val)
+      if (!err) {
+        setNewsletterStatus('idle')
+        setNewsletterError('')
+      } else {
+        setNewsletterError(err)
+      }
+    }
+  }
+
+  const handleEmailBlur = () => {
+    if (newsletterEmail.trim() && newsletterStatus !== 'success') {
+      const err = validateEmail(newsletterEmail)
+      if (err) {
+        setNewsletterStatus('error')
+        setNewsletterError(err)
+      }
+    }
+  }
+
+  const handleNewsletterSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+
+    const err = validateEmail(newsletterEmail)
+    if (err) {
+      setNewsletterStatus('error')
+      setNewsletterError(err)
+      emailInputRef.current?.focus()
+      return
+    }
+
+    setNewsletterStatus('loading')
+    setNewsletterError('')
+
+    try {
+      const response = await fetch('/api/newsletter', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: newsletterEmail.trim() }),
+      })
+
+      const data = await response.json().catch(() => ({}))
+
+      if (response.ok && data?.success) {
+        setNewsletterStatus('success')
+        setNewsletterSuccess(data?.message || 'Thank you for subscribing to my newsletter!')
+        setNewsletterEmail('')
+      } else {
+        setNewsletterStatus('error')
+        setNewsletterError(data?.error || 'Subscription failed. Please try again or contact me directly.')
+        emailInputRef.current?.focus()
+      }
+    } catch {
+      setNewsletterStatus('error')
+      setNewsletterError('Network error. Please check your connection and try again.')
+      emailInputRef.current?.focus()
+    }
+  }
+
+  const handleResetNewsletter = () => {
+    setNewsletterStatus('idle')
+    setNewsletterError('')
+    setNewsletterSuccess('')
+    setNewsletterEmail('')
+    setTimeout(() => emailInputRef.current?.focus(), 50)
+  }
 
   return (
     <footer id="footer">
@@ -184,10 +277,84 @@ export default function Footer() {
             </div>
             <div className="col-lg-4 col-md-6 justify-content-center footer-newsletter">
               <h4>Newsletter</h4>
-              <form action="" method="post" onSubmit={(e) => e.preventDefault()}>
-                <input type="email" name="email" placeholder="Your email" />
-                <input type="submit" value="Subscribe" />
-              </form>
+              <p style={{ color: '#ffffff', fontSize: '14px', margin: '10px 0 0 0', lineHeight: 1.5 }}>
+                Subscribe to get updates on new projects, tech articles, and creative work.
+              </p>
+
+              {newsletterStatus === 'success' ? (
+                <div
+                  className="newsletter-success-box"
+                  role="alert"
+                  aria-live="polite"
+                >
+                  <div className="d-flex align-items-center mb-1">
+                    <i className="bi bi-check-circle-fill" style={{ color: '#00c853', fontSize: '18px', marginRight: '8px' }}></i>
+                    <strong style={{ color: '#ffffff', fontSize: '14px' }}>Subscribed!</strong>
+                  </div>
+                  <p style={{ color: '#e0e0e0', fontSize: '13px', margin: '4px 0 10px 0', lineHeight: 1.4 }}>
+                    {newsletterSuccess}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleResetNewsletter}
+                    className="newsletter-reset-btn"
+                  >
+                    Subscribe another email
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <form
+                    action=""
+                    method="post"
+                    onSubmit={handleNewsletterSubmit}
+                    noValidate
+                    className={newsletterStatus === 'error' ? 'has-error' : ''}
+                  >
+                    <input
+                      ref={emailInputRef}
+                      type="email"
+                      name="email"
+                      placeholder="Your email"
+                      value={newsletterEmail}
+                      onChange={handleEmailChange}
+                      onBlur={handleEmailBlur}
+                      disabled={newsletterStatus === 'loading'}
+                      required
+                      aria-label="Your email address"
+                      aria-required="true"
+                      aria-invalid={newsletterStatus === 'error'}
+                      aria-describedby={newsletterStatus === 'error' ? 'newsletter-error-msg' : undefined}
+                    />
+                    <button
+                      type="submit"
+                      disabled={newsletterStatus === 'loading'}
+                      aria-label={newsletterStatus === 'loading' ? 'Subscribing...' : 'Subscribe'}
+                    >
+                      {newsletterStatus === 'loading' ? (
+                        <span className="d-inline-flex align-items-center justify-content-center gap-1">
+                          <span className="newsletter-spinner" aria-hidden="true"></span>
+                        </span>
+                      ) : (
+                        'Subscribe'
+                      )}
+                    </button>
+                  </form>
+
+                  {newsletterStatus === 'error' && newsletterError && (
+                    <div
+                      id="newsletter-error-msg"
+                      className="newsletter-error-box"
+                      role="alert"
+                      aria-live="assertive"
+                    >
+                      <i className="bi bi-exclamation-circle-fill" style={{ marginRight: '6px', color: '#ff4d4f' }}></i>
+                      <span>{newsletterError}</span>
+                    </div>
+                  )}
+                </>
+              )}
+
               <br />
               <br />
               <br />
@@ -228,6 +395,146 @@ export default function Footer() {
           </div>
         </div>
       </div>
+
+      <style jsx>{`
+        #footer .footer-top .footer-newsletter form {
+          margin-top: 20px;
+          background: #fff;
+          padding: 6px 10px;
+          position: relative;
+          border-radius: 4px;
+          transition: box-shadow 0.2s ease;
+        }
+
+        #footer .footer-top .footer-newsletter form.has-error {
+          box-shadow: 0 0 0 2px #ff4d4f;
+        }
+
+        #footer .footer-top .footer-newsletter form input[type='email'] {
+          border: 0;
+          padding: 4px;
+          width: calc(100% - 110px);
+          font-family: 'Lato', sans-serif;
+          font-size: 14px;
+          outline: none;
+          color: #222;
+        }
+
+        #footer .footer-top .footer-newsletter form input[type='email']:disabled {
+          background: #f5f5f5;
+          color: #888;
+        }
+
+        #footer .footer-top .footer-newsletter form button[type='submit'] {
+          position: absolute;
+          top: 0;
+          right: -2px;
+          bottom: 0;
+          border: 0;
+          font-size: 15px;
+          font-weight: 600;
+          font-family: 'Lato', sans-serif;
+          padding: 0 20px;
+          background: #000000;
+          color: #fff;
+          transition: background 0.3s ease;
+          border-radius: 0 4px 4px 0;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        #footer .footer-top .footer-newsletter form button[type='submit']:hover:not(:disabled) {
+          background: #ff0019;
+        }
+
+        #footer .footer-top .footer-newsletter form button[type='submit']:disabled {
+          opacity: 0.8;
+          cursor: not-allowed;
+          background: #333333;
+        }
+
+        .newsletter-spinner {
+          width: 16px;
+          height: 16px;
+          border: 2px solid rgba(255, 255, 255, 0.3);
+          border-top-color: #ffffff;
+          border-radius: 50%;
+          animation: nlSpin 0.7s linear infinite;
+          display: inline-block;
+        }
+
+        @keyframes nlSpin {
+          to {
+            transform: rotate(360deg);
+          }
+        }
+
+        .newsletter-error-box {
+          margin-top: 8px;
+          color: #ff6b6b;
+          font-size: 13px;
+          display: flex;
+          align-items: center;
+          background: rgba(255, 77, 79, 0.1);
+          border: 1px solid rgba(255, 77, 79, 0.3);
+          padding: 6px 12px;
+          border-radius: 4px;
+          font-family: 'Lato', sans-serif;
+          animation: nlFadeIn 0.2s ease;
+        }
+
+        .newsletter-success-box {
+          margin-top: 20px;
+          background: rgba(0, 200, 83, 0.12);
+          border: 1px solid rgba(0, 200, 83, 0.4);
+          padding: 14px 16px;
+          border-radius: 4px;
+          font-family: 'Lato', sans-serif;
+          animation: nlFadeIn 0.25s ease;
+        }
+
+        .newsletter-reset-btn {
+          background: rgba(255, 255, 255, 0.08);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          color: #ffffff;
+          font-size: 12px;
+          padding: 4px 12px;
+          border-radius: 3px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          font-family: 'Lato', sans-serif;
+        }
+
+        .newsletter-reset-btn:hover {
+          background: rgba(255, 255, 255, 0.2);
+          border-color: #ffffff;
+        }
+
+        @keyframes nlFadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(-4px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @media (max-width: 575px) {
+          #footer .footer-top .footer-newsletter form input[type='email'] {
+            width: calc(100% - 100px);
+            font-size: 13px;
+          }
+
+          #footer .footer-top .footer-newsletter form button[type='submit'] {
+            padding: 0 14px;
+            font-size: 14px;
+          }
+        }
+      `}</style>
     </footer>
   )
 }

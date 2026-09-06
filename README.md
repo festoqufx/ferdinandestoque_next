@@ -59,7 +59,7 @@ npm run start
 
 ```
 ├── app/
-│   ├── api/                  # Next.js API route handlers (Presence, GitHub Calendar)
+│   ├── api/                  # Next.js API route handlers (Presence, GitHub Calendar, Newsletter, Contact)
 │   ├── globals.css           # Global stylesheets and fonts
 │   ├── layout.tsx            # Root layout with metadata and scripts
 │   └── page.tsx              # Main portfolio home page
