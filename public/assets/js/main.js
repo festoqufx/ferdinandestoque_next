@@ -73,7 +73,7 @@
   }, true);
 
   const heroIndicators = select("#hero-carousel-indicators");
-  if (heroIndicators) {
+  if (heroIndicators && heroIndicators.children.length === 0) {
     select("#heroCarousel .carousel-item", true).forEach((item, index) => {
       heroIndicators.innerHTML += index === 0
         ? "<li data-bs-target='#heroCarousel' data-bs-slide-to='" + index + "' class='active'></li>"
@@ -102,37 +102,6 @@
       scrollto(window.location.hash);
     }
   });
-
-  window.initPortfolio = function () {
-    if (window.__portfolioReady) return;
-    const portfolioContainer = select(".portfolio-container");
-    if (portfolioContainer && typeof Isotope !== "undefined") {
-      const portfolioIsotope = new Isotope(portfolioContainer, {
-        itemSelector: ".portfolio-item",
-        layoutMode: "fitRows"
-      });
-      const portfolioFilters = select("#portfolio-flters li", true);
-      on("click", "#portfolio-flters li", function (e) {
-        e.preventDefault();
-        portfolioFilters.forEach((el) => el.classList.remove("filter-active"));
-        this.classList.add("filter-active");
-        portfolioIsotope.arrange({ filter: this.getAttribute("data-filter") });
-      }, true);
-      const refreshLayout = () => portfolioIsotope.layout();
-      portfolioContainer.querySelectorAll("img").forEach((img) => {
-        if (img.complete) refreshLayout();
-        else img.addEventListener("load", refreshLayout);
-      });
-      setTimeout(refreshLayout, 300);
-      setTimeout(refreshLayout, 1000);
-      window.addEventListener("resize", refreshLayout);
-      window.addEventListener("scroll", refreshLayout, { passive: true });
-    }
-    if (typeof GLightbox !== "undefined") {
-      GLightbox({ selector: ".portfolio-lightbox" });
-    }
-    window.__portfolioReady = true;
-  };
 
   const zigzag = select('.footer-zigzag[data-zigzag="interactive"]');
   if (zigzag) {
@@ -627,9 +596,11 @@
     const prefsKey = "askAnythingPrefsV2";
     const maxHistoryItems = 40;
     const defaultPrompts = [
+      { label: "Certificates", prompt: "What certificates do you have?" },
+      { label: "Hobbies & Interests", prompt: "What are your hobbies and interests?" },
+      { label: "Websites & Projects", prompt: "What websites and projects have you worked on?" },
+      { label: "Services & Expertise", prompt: "What services do you offer?" },
       { label: "Skills", prompt: "What are your skills?" },
-      { label: "Experience", prompt: "Tell me about your experience." },
-      { label: "Projects", prompt: "Show me your projects." },
       { label: "Contact", prompt: "How can I contact you?" }
     ];
 
@@ -654,6 +625,28 @@
         email: "ferdinand.estoque@yahoo.com",
         phone: "+63 995 814 3127"
       },
+      certificates: [
+        "**AI Foundations** by OpenAI — https://academy.openai.com/home/certificate/u77flalmmn",
+        "**Anthropic Claude 101** by Anthropic — https://verify.skilljar.com/c/tadt9xixkhts",
+        "**Azure Fundamentals** by Microsoft — https://simpli-web.app.link/e/4k1LYawGU5b",
+        "**ITIL V4** by SimpliLearn — https://simpli-web.app.link/e/nIHO6LMkU5b",
+        "**Cybersecurity Awareness** by HP — https://www.life-global.org/certificate/78f4c7bc-0144-428d-b48e-da9d56424494",
+        "**AI for Business Professionals** by HP — https://www.life-global.org/certificate/a9de57e0-d363-4326-911a-d41b40a0311d"
+      ],
+      hobbies: [
+        "**Coding**: Building side projects, testing new frameworks (Next.js, Vue, Angular), and experimenting with AI agents.",
+        "**Gym/Fitness**: Daily workouts, strength training, and physical discipline.",
+        "**Games**: Strategy games, retro classics, and studying interactive game mechanics.",
+        "**Movies**: Sci-fi films, cinematic storytelling, and animation.",
+        "**Painting**: Traditional and digital art, illustrations, and visual composition."
+      ],
+      interests: [
+        "**Music**: Audiophile sound, creating music apps (like Echoes Music Player).",
+        "**Martial Arts**: Martial discipline, mental agility, and focus.",
+        "**Photography**: Capturing street, landscape, and travel moments.",
+        "**Reading**: Software architecture, AI advancements, UI/UX design, and personal development.",
+        "**Travel**: Exploring diverse cultures and solo travel adventures, like my recent solo trip across Japan! (Tokyo, Narita, Ichiran Ramen, and Disneyland)"
+      ],
       skills: [
         "React",
         "Svelte",
@@ -903,53 +896,56 @@
     };
 
     const answerFromRules = (query) => {
-      const q = query.toLowerCase().trim();
-      const has = (pattern) => pattern.test(q);
+      const raw = query.trim();
+      const q = raw.toLowerCase();
 
       if (!q) {
         return {
-          text: `I can help with skills, experience, projects, services, contact details, education, AI tools, or the website itself.`,
+          text: `I can answer questions about Ferdinand's certificates, hobbies, interests, skills, experience, projects, services, education, and contact details.`,
           topic: "general",
           followUps: defaultPrompts
         };
       }
 
+      const has = (pattern) => pattern.test(q);
+
+      // Conversational & utility intents
       if (has(/\b(clear|reset|start over|restart|new chat)\b/)) {
         return {
           text: `You can clear the conversation with the Clear button in the chat header.`,
-          topic: "general",
+          topic: "utility",
           followUps: defaultPrompts
         };
       }
 
       if (has(/\b(help|how to use|what can i ask|commands|options|navigate|navigation)\b/)) {
         return {
-          text: `Here is what you can ask me:\n- **Skills** — front-end, back-end, design, or AI tools\n- **Experience** — career timeline and companies\n- **Projects** — portfolio items with live demo links\n- **Services** — what Ferdinand offers\n- **Contact** — email, phone, and social links\n- **Education** — academic background\n- **Social** — GitHub, LinkedIn, Instagram\n- **Surprise me** — a random fact\n\nTip: press **/** on your keyboard to open this chat anytime.`,
+          text: `Here is what you can ask me:\n- **Certificates** — verified credentials and certifications\n- **Hobbies & Interests** — personal pastimes, passions, and travel\n- **Skills** — front-end, back-end, design, or AI tools\n- **Experience** — career timeline and companies\n- **Projects** — portfolio items with live demo links\n- **Services** — what Ferdinand offers and custom quotes\n- **Contact** — email, phone, and social links\n- **Education** — academic background\n- **Surprise me** — a random fun fact`,
           topic: "help",
           followUps: defaultPrompts
         };
       }
 
-      if (has(/\b(hi|hello|hey|good morning|good afternoon|good evening)\b/)) {
+      if (has(/^(hi|hello|hey|good (morning|afternoon|evening)|howdy|greetings)[!.]?$/) || (has(/\b(hi|hello|hey|good morning|good afternoon|good evening)\b/) && q.split(/\s+/).length <= 4)) {
         return {
-          text: `Hello. I’m the Ask Anything assistant for Ferdinand Estoque’s website. I can help with skills, experience, projects, services, contact details, and the site sections.`,
-          topic: "general",
+          text: `Hello! I'm the website assistant for Ferdinand Estoque. Ask me anything about Ferdinand's certificates, hobbies, interests, skills, experience, projects, or contact details!`,
+          topic: "greeting",
           followUps: defaultPrompts
         };
       }
 
       if (has(/\b(thank|thanks|thank you|appreciate|cheers)\b/)) {
         return {
-          text: `You're welcome! Feel free to ask anything else about Ferdinand's work, skills, or how to get in touch.`,
-          topic: "general",
+          text: `You're welcome! Feel free to ask anything else about Ferdinand's certificates, hobbies, skills, or projects.`,
+          topic: "greeting",
           followUps: defaultPrompts
         };
       }
 
       if (has(/\b(bye|goodbye|see you|later|ciao|take care)\b/)) {
         return {
-          text: `Goodbye! Feel free to come back anytime. You can also reach Ferdinand directly at ${siteFacts.contact.email}.`,
-          topic: "general",
+          text: `Goodbye! Feel free to come back anytime or reach Ferdinand directly at ${siteFacts.contact.email}.`,
+          topic: "greeting",
           followUps: [
             { label: "Contact", prompt: "How can I contact you?" },
             { label: "Projects", prompt: "Show me your projects." }
@@ -959,74 +955,296 @@
 
       if (has(/\b(surprise me|random|fun fact|tell me something|did you know|interesting)\b/)) {
         const funFacts = [
+          `Ferdinand has verified certificates in **AI Foundations** (OpenAI) and **Claude 101** (Anthropic)!`,
           `Ferdinand has been building for the web since **2008** — over 16 years of digital experience.`,
           `The alias **"Black Raven"** comes from Ferdinand's longtime online handle, ravenom_007.`,
-          `This portfolio was built with vanilla HTML, CSS, and JavaScript — no heavy framework needed.`,
-          `Ferdinand uses AI tools like **Claude Code**, **GitHub Copilot**, and **Cursor** to accelerate development.`,
-          `Ferdinand has worked with companies like **Visa**, **Nasdaq**, and **Smart Communications** throughout his career.`,
+          `Ferdinand took an unforgettable solo journey across **Japan**, exploring Tokyo and enjoying authentic Ichiran Ramen!`,
           `Ferdinand's project **Echoes** is a fully featured music player built with Angular.`,
-          `The Ask Anything chatbot you're using right now was hand-crafted and runs entirely in the browser — no server needed.`
+          `Ferdinand has worked with companies like **Visa**, **Nasdaq**, and **Smart Communications** throughout his career.`
         ];
         return {
           text: funFacts[Math.floor(Math.random() * funFacts.length)],
           topic: "fun",
           followUps: [
             { label: "Another one", prompt: "Surprise me!" },
-            { label: "Experience", prompt: "Tell me about your experience." },
-            { label: "Projects", prompt: "Show me your projects." }
+            { label: "Certificates", prompt: "What certificates do you have?" },
+            { label: "Japan Trip", prompt: "Tell me about your travel to Japan" }
           ]
         };
       }
 
-      if (has(/\b(who are you|about you|tell me about you|black raven|ferdinand)\b/)) {
+      // Key topic recognition
+      const wantsCertificates = has(/\b(cert|certs|certificate|certificates|certification|certifications|credential|credentials|diploma|diplomas|licensed|license|licenses|accredited|accreditation|accreditations|certified|qualification|qualifications)\b/);
+      const wantsHobbies = has(/\b(hobb(y|ies)|pastime|pastimes|leisure|free time|spare time|for fun|outside of work|gym|workout|workouts|fitness|gaming|games|gamer|video games|painting|drawing|art)\b/);
+      const wantsInterests = has(/\b(interest|interests|passion|passions|interested in|music|sound|audiophile|martial art|martial arts|karate|photography|photos|reading|books|travel|traveling|travels|trip|trips|japan|tokyo|narita|ichiran|disneyland|vacation|exploring)\b/);
+      const wantsSkills = has(/\b(skill|skills|tech stack|stack|technolog(y|ies)|front[- ]?end|back[- ]?end|full[- ]?stack|languages?|frameworks?|react|vue|angular|svelte|nextjs|node|php|python|laravel|typescript|javascript|database|databases)\b/);
+      const wantsExperience = has(/\b(experience|timeline|work history|career|employment|jobs?|companies|company|worked for|background|roles?|resume|cv)\b/);
+      const wantsProjects = has(/\b(project|projects|portfolio|portfolio items|apps?|applications?|demos?|works?|what (have you|has he) built|sudoku|myonlinesite|worldstime|space snake|memory matrix|next ide|digital signature|dinner wheel|echoes)\b/);
+      const wantsServices = has(/\b(service|services|offer|offers|offering|offerings|what can you do|what services|hire|hiring|freelance|rate|rates|pricing|price|cost|quote)\b/);
+      const wantsContact = has(/\b(contact|email|phone|call|reach|message|touch|location|address|where (are you|is he) (based|located|living)|social|socials|github|linkedin|instagram)\b/);
+      const wantsEducation = has(/\b(education|degree|college|university|graduated|graduate|bsit|bachelor|school|academic)\b/);
+      const wantsAI = has(/\b(ai|artificial intelligence|ai tools|copilot|claude|cursor|cline|codex|antigravity|devin|unsloth)\b/);
+      const wantsAbout = has(/\b(who (is|are) (ferdinand|he|black raven|you)|tell me about (him|ferdinand|black raven|yourself)|bio|biography|profile|overview)\b/);
+
+      // Specific sub-topic queries
+      const hasOpenAICert = has(/\b(openai|ai foundations)\b/);
+      const hasAnthropicCert = has(/\b(anthropic|claude 101)\b/);
+      const hasAzureCert = has(/\b(azure|microsoft)\b/);
+      const hasItilCert = has(/\b(itil|itil 4|it service)\b/);
+      const hasHpCert = has(/\b(hp|cybersecurity awareness|ai for business)\b/);
+      const hasJapanTravel = has(/\b(japan|tokyo|narita|ichiran|disneyland|travel|trip)\b/);
+      const hasMusicInterest = has(/\b(music|sound|audiophile|echoes)\b/);
+      const hasGymHobby = has(/\b(gym|workout|fitness|strength training)\b/);
+      const hasGamesHobby = has(/\b(game|games|gaming|gamer)\b/);
+      const hasPaintingHobby = has(/\b(painting|draw|drawing|art|visual art)\b/);
+
+      // Specific project matching
+      const projectMap = {
+        sudoku: { name: "Sudoku Solver", stack: "React", url: "https://sudoku-solver-raven.vercel.app/" },
+        myonlinesite: { name: "MyOnlineSite", stack: "Angular", url: "https://festoque-v1-blkred.vercel.app/" },
+        worldstime: { name: "WorldsTime", stack: "Next.js", url: "https://next-world-time-raven-v1.vercel.app/" },
+        snake: { name: "Space Snake", stack: "Vue", url: "https://vue-space-snake-raven.vercel.app/" },
+        memory: { name: "Memory Matrix", stack: "Angular", url: "https://angular-memory-card-game-raven.vercel.app/" },
+        ide: { name: "NEXT IDE", stack: "Next.js", url: "https://next-web-based-ide-raven.vercel.app/" },
+        signature: { name: "Digital Signature Pro", stack: "Vue", url: "https://digital-signature-raven-pro.vercel.app/" },
+        dinner: { name: "Whats for Dinner Wheel", stack: "Vue", url: "https://vue-whats-for-dinner-wheel-raven.vercel.app/" },
+        echoes: { name: "Echoes Music Player", stack: "Angular", url: "https://festoqufx-github-io-echoes-music-pl.vercel.app/#/search/videos" }
+      };
+      const matchedProjectKey = Object.keys(projectMap).find((key) => q.includes(key));
+
+      // Count matched categories to handle compound multi-topic queries
+      const matchedCategories = [];
+      if (wantsCertificates) matchedCategories.push("certificates");
+      if (wantsHobbies) matchedCategories.push("hobbies");
+      if (wantsInterests) matchedCategories.push("interests");
+      if (wantsSkills) matchedCategories.push("skills");
+      if (wantsExperience) matchedCategories.push("experience");
+      if (wantsProjects && !matchedProjectKey) matchedCategories.push("projects");
+      if (wantsServices) matchedCategories.push("services");
+      if (wantsContact) matchedCategories.push("contact");
+      if (wantsEducation) matchedCategories.push("education");
+
+      // Multi-topic compound queries (e.g. "What are his certificates, hobbies, or interests?")
+      if (matchedCategories.length > 1) {
+        const sections = [];
+        const followUps = [];
+
+        if (wantsCertificates) {
+          sections.push(`**Certificates**:\n${formatList(siteFacts.certificates)}`);
+          followUps.push({ label: "Certificates", prompt: "Tell me more about certificates" });
+        }
+        if (wantsHobbies) {
+          sections.push(`**Hobbies**:\n${formatList(siteFacts.hobbies)}`);
+          followUps.push({ label: "Hobbies", prompt: "What are his hobbies?" });
+        }
+        if (wantsInterests) {
+          sections.push(`**Interests**:\n${formatList(siteFacts.interests)}`);
+          followUps.push({ label: "Interests", prompt: "Tell me about his interests" });
+        }
+        if (wantsSkills) {
+          sections.push(`**Skills & Tech Stack**:\n${formatList(siteFacts.skills.slice(0, 10))} and more.`);
+          followUps.push({ label: "Skills", prompt: "What are your skills?" });
+        }
+        if (wantsExperience) {
+          sections.push(`**Experience**:\n${formatList(siteFacts.experience)}`);
+          followUps.push({ label: "Experience", prompt: "Tell me about your experience" });
+        }
+        if (wantsProjects && !matchedProjectKey) {
+          sections.push(`**Featured Projects**:\n${formatList(siteFacts.projects.slice(0, 5))}`);
+          followUps.push({ label: "Projects", prompt: "Show me your projects" });
+        }
+        if (wantsServices) {
+          sections.push(`**Services Offered**:\n${formatList(siteFacts.services)}`);
+          followUps.push({ label: "Services", prompt: "What services do you offer?" });
+        }
+        if (wantsContact) {
+          sections.push(`**Contact Information**:\n- Email: ${siteFacts.contact.email}\n- Phone: ${siteFacts.contact.phone}\n- Location: ${siteFacts.location}`);
+          followUps.push({ label: "Contact", prompt: "How can I contact you?" });
+        }
+        if (wantsEducation) {
+          sections.push(`**Education**:\n- ${siteFacts.education}`);
+        }
+
         return {
-          text: `${siteFacts.name}, also known as **${siteFacts.alias}**, is a ${siteFacts.title} based in ${siteFacts.location}. He has ${siteFacts.experienceYears} of experience building modern digital experiences across design, development, and AI-assisted workflows.`,
-          topic: "about",
+          text: `Here is the relevant information from Ferdinand Estoque's website:\n\n${sections.join("\n\n")}`,
+          topic: "compound",
+          followUps: followUps.slice(0, 4)
+        };
+      }
+
+      // Specific Project query
+      if (matchedProjectKey) {
+        const p = projectMap[matchedProjectKey];
+        return {
+          text: `**${p.name}** is a project built with **${p.stack}**.\nLive demo: ${p.url}\nSource code is also available on GitHub at https://github.com/festoqufx`,
+          topic: "projects",
           followUps: [
+            { label: "All projects", prompt: "Show me your projects." },
             { label: "Skills", prompt: "What are your skills?" },
-            { label: "Experience", prompt: "Tell me about your experience." },
             { label: "Contact", prompt: "How can I contact you?" }
           ]
         };
       }
 
-      if (has(/\b(hobb|interest|outside of work|personal|when not working|free time|passion)\b/)) {
+      // Specific Certificate queries
+      if (wantsCertificates) {
+        if (hasOpenAICert) {
+          return {
+            text: `Ferdinand holds the **AI Foundations** certificate by **OpenAI**.\nIt validates foundational AI knowledge and practical understanding of AI concepts.\nURL: https://academy.openai.com/home/certificate/u77flalmmn`,
+            topic: "certificates",
+            followUps: [
+              { label: "Anthropic Cert", prompt: "Anthropic certificate" },
+              { label: "All Certificates", prompt: "What certificates do you have?" },
+              { label: "Skills", prompt: "What are your skills?" }
+            ]
+          };
+        }
+        if (hasAnthropicCert) {
+          return {
+            text: `Ferdinand holds the **Anthropic Claude 101** certificate by **Anthropic**.\nIt validates foundational knowledge of Claude and its practical use in AI-assisted work.\nURL: https://verify.skilljar.com/c/tadt9xixkhts`,
+            topic: "certificates",
+            followUps: [
+              { label: "OpenAI Cert", prompt: "OpenAI certificate" },
+              { label: "All Certificates", prompt: "What certificates do you have?" },
+              { label: "AI Tools", prompt: "What AI tools do you use?" }
+            ]
+          };
+        }
+        if (hasAzureCert) {
+          return {
+            text: `Ferdinand holds the **Azure Fundamentals** certificate by **Microsoft** (via SimpliLearn).\nIt validates foundational knowledge of Azure cloud services and core cloud computing concepts.\nURL: https://simpli-web.app.link/e/4k1LYawGU5b`,
+            topic: "certificates",
+            followUps: [
+              { label: "ITIL Cert", prompt: "Tell me about the ITIL certificate." },
+              { label: "All Certificates", prompt: "What certificates do you have?" }
+            ]
+          };
+        }
+        if (hasItilCert) {
+          return {
+            text: `Ferdinand holds the **ITIL V4 certificate** by **SimpliLearn**.\nIt validates knowledge of ITIL 4 practices for effective IT service management and delivery.\nURL: https://simpli-web.app.link/e/nIHO6LMkU5b`,
+            topic: "certificates",
+            followUps: [
+              { label: "Azure Cert", prompt: "Tell me about the Azure certificate." },
+              { label: "All Certificates", prompt: "What certificates do you have?" }
+            ]
+          };
+        }
+        if (hasHpCert) {
+          return {
+            text: `Ferdinand holds two certifications from **HP (LIFE Global)**:\n- **Cybersecurity Awareness**: https://www.life-global.org/certificate/78f4c7bc-0144-428d-b48e-da9d56424494\n- **AI for Business Professionals**: https://www.life-global.org/certificate/a9de57e0-d363-4326-911a-d41b40a0311d`,
+            topic: "certificates",
+            followUps: [
+              { label: "OpenAI Cert", prompt: "OpenAI certificate" },
+              { label: "Anthropic Cert", prompt: "Anthropic certificate" },
+              { label: "All Certificates", prompt: "What certificates do you have?" }
+            ]
+          };
+        }
         return {
-          text: `Outside of development, Ferdinand is passionate about **digital art**, **music**, and **emerging technology**. The alias "Black Raven" reflects a creative identity that extends well beyond code.`,
-          topic: "about",
+          text: `Ferdinand holds several professional certificates validating his expertise in AI, Cloud, and IT Service Management:\n\n${formatList(siteFacts.certificates)}\n\nYou can view the badges and credentials directly in the Certificates section!`,
+          topic: "certificates",
           followUps: [
-            { label: "About", prompt: "Who are you?" },
-            { label: "Projects", prompt: "Show me your projects." },
-            { label: "AI tools", prompt: "What AI tools do you use?" }
+            { label: "Anthropic Cert", prompt: "Tell me about the Anthropic certificate." },
+            { label: "OpenAI Cert", prompt: "Tell me about the OpenAI certificate." },
+            { label: "Skills", prompt: "What are your technical skills?" }
           ]
         };
       }
 
-      if (has(/\b(front[- ]?end|front end|ui|ui\/ux|design)\b/)) {
+      // Hobbies queries
+      if (wantsHobbies && !wantsInterests) {
+        if (hasGymHobby) {
+          return {
+            text: `Ferdinand's fitness hobby includes daily workouts, strength training, and physical discipline to stay energized and focused.`,
+            topic: "hobbies",
+            followUps: [{ label: "Other Hobbies", prompt: "What other hobbies do you have?" }, { label: "Interests", prompt: "What are your interests?" }]
+          };
+        }
+        if (hasGamesHobby) {
+          return {
+            text: `Ferdinand enjoys strategy games and retro classics, as well as studying interactive game mechanics.`,
+            topic: "hobbies",
+            followUps: [{ label: "Other Hobbies", prompt: "What other hobbies do you have?" }, { label: "Projects", prompt: "Show me your projects." }]
+          };
+        }
+        if (hasPaintingHobby) {
+          return {
+            text: `Ferdinand practices traditional and digital painting, visual composition, and artistic illustration.`,
+            topic: "hobbies",
+            followUps: [{ label: "Other Hobbies", prompt: "What other hobbies do you have?" }, { label: "Design Skills", prompt: "What design tools do you use?" }]
+          };
+        }
         return {
-          text: `For front-end and design work, the site highlights: \n${formatList(skillGroups.frontEnd)}\n\nDesign and workflow tools: \n${formatList(skillGroups.design)}`,
-          topic: "skills",
+          text: `Here is what Ferdinand enjoys doing in his free time:\n\n${formatList(siteFacts.hobbies)}`,
+          topic: "hobbies",
           followUps: [
-            { label: "Back-end skills", prompt: "What back-end skills do you use?" },
-            { label: "AI tools", prompt: "What AI tools do you use?" },
+            { label: "Interests", prompt: "What are your interests?" },
+            { label: "Certificates", prompt: "What certificates do you hold?" },
             { label: "Projects", prompt: "Show me your projects." }
           ]
         };
       }
 
-      if (has(/\b(back[- ]?end|backend|server|api|database)\b/)) {
+      // Interests queries
+      if (wantsInterests && !wantsHobbies) {
+        if (hasJapanTravel) {
+          return {
+            text: `One of Ferdinand's most memorable travel experiences was an incredible solo trip to **Japan**!\nHe explored Tokyo at his own pace, visited Narita, stayed near Tokyo Disneyland, and enjoyed quiet moments savoring authentic Japanese ramen at Ichiran. It was a perfect blend of culture, food, and solo adventure.`,
+            topic: "interests",
+            followUps: [
+              { label: "Other Interests", prompt: "What other interests do you have?" },
+              { label: "Hobbies", prompt: "What are your hobbies?" },
+              { label: "Experience", prompt: "Tell me about your experience." }
+            ]
+          };
+        }
+        if (hasMusicInterest) {
+          return {
+            text: `Ferdinand is an audiophile passionate about high-fidelity sound and created **Echoes Music Player**, an interactive web app built with Angular!\nLive demo: https://festoqufx-github-io-echoes-music-pl.vercel.app/#/search/videos`,
+            topic: "interests",
+            followUps: [
+              { label: "Other Interests", prompt: "What other interests do you have?" },
+              { label: "Hobbies", prompt: "What are your hobbies?" },
+              { label: "Projects", prompt: "Show me your projects." }
+            ]
+          };
+        }
         return {
-          text: `Back-end and data-focused skills shown on the site include:\n${formatList(skillGroups.backEnd)}`,
-          topic: "skills",
+          text: `Ferdinand is passionate about several diverse topics:\n\n${formatList(siteFacts.interests)}`,
+          topic: "interests",
           followUps: [
-            { label: "Front-end skills", prompt: "What front-end skills do you use?" },
-            { label: "Experience", prompt: "Tell me about your experience." },
-            { label: "Services", prompt: "What services do you offer?" }
+            { label: "Hobbies", prompt: "What are your hobbies?" },
+            { label: "Japan Trip", prompt: "Tell me about your trip to Japan!" },
+            { label: "Contact", prompt: "How can I contact you?" }
           ]
         };
       }
 
-      if (has(/\b(skill|skills|tech stack|stack|technology|tech)\b/)) {
+      // Skills & Stack
+      if (wantsSkills) {
+        if (has(/\b(front[- ]?end|front end|ui|ui\/ux|design)\b/)) {
+          return {
+            text: `For front-end and design work, the site highlights:\n${formatList(skillGroups.frontEnd)}\n\nDesign and workflow tools:\n${formatList(skillGroups.design)}`,
+            topic: "skills",
+            followUps: [
+              { label: "Back-end skills", prompt: "What back-end skills do you use?" },
+              { label: "AI tools", prompt: "What AI tools do you use?" },
+              { label: "Projects", prompt: "Show me your projects." }
+            ]
+          };
+        }
+        if (has(/\b(back[- ]?end|backend|server|api|database)\b/)) {
+          return {
+            text: `Back-end and data-focused skills shown on the site include:\n${formatList(skillGroups.backEnd)}`,
+            topic: "skills",
+            followUps: [
+              { label: "Front-end skills", prompt: "What front-end skills do you use?" },
+              { label: "Experience", prompt: "Tell me about your experience." },
+              { label: "Services", prompt: "What services do you offer?" }
+            ]
+          };
+        }
         return {
           text: `Here is a quick snapshot of the main skills and tools on the site:\n${formatList(siteFacts.skills)}\n\nIf you want, I can also group them by front-end, back-end, design, or AI tools.`,
           topic: "skills",
@@ -1038,9 +1256,10 @@
         };
       }
 
-      if (has(/\b(experience|timeline|work history|career|job)\b/)) {
+      // Experience
+      if (wantsExperience) {
         return {
-          text: `Here is the experience timeline on the page:\n${formatList(siteFacts.experience)}\n\nI can also summarize this into a shorter career overview if you want.`,
+          text: `Here is the experience timeline on the page:\n\n${formatList(siteFacts.experience)}\n\nHe has over 16 years of professional experience across development and content management.`,
           topic: "experience",
           followUps: [
             { label: "Projects", prompt: "Show me your projects." },
@@ -1050,9 +1269,10 @@
         };
       }
 
-      if (has(/\b(project|projects|portfolio|gallery|apps?)\b/)) {
+      // Projects
+      if (wantsProjects) {
         return {
-          text: `Some featured projects from the portfolio are:\n${formatList(siteFacts.projects)}\n\nYou can also use the Projects section to open live demos and source links.`,
+          text: `Some featured projects from the portfolio are:\n\n${formatList(siteFacts.projects)}\n\nYou can also use the Projects section to open live demos and source links.`,
           topic: "projects",
           followUps: [
             { label: "Skills", prompt: "What are your skills?" },
@@ -1062,21 +1282,23 @@
         };
       }
 
-      if (has(/\b(contact|email|phone|reach|location|where are you|how can i reach)\b/)) {
+      // Contact & Socials
+      if (wantsContact) {
         return {
-          text: `You can reach Ferdinand here:\n- Email: ${siteFacts.contact.email}\n- Phone: ${siteFacts.contact.phone}\n- Location: ${siteFacts.location}`,
+          text: `You can reach Ferdinand here:\n- Email: ${siteFacts.contact.email}\n- Phone: ${siteFacts.contact.phone}\n- Location: ${siteFacts.location}\n- GitHub: https://github.com/festoqufx\n- LinkedIn: https://www.linkedin.com/in/ferdinand-estoque-46797876\n- Instagram: https://www.instagram.com/ravenom_007`,
           topic: "contact",
           followUps: [
             { label: "Services", prompt: "What services do you offer?" },
             { label: "Projects", prompt: "Show me your projects." },
-            { label: "Website", prompt: "What can you tell me about this website?" }
+            { label: "Certificates", prompt: "What certificates do you have?" }
           ]
         };
       }
 
-      if (has(/\b(service|services|what can you do|what do you offer|offer)\b/)) {
+      // Services
+      if (wantsServices) {
         return {
-          text: `The site highlights these services:\n${formatList(siteFacts.services)}\n\nIf you want, I can also explain which service fits a specific project idea.`,
+          text: `The site highlights these services:\n${formatList(siteFacts.services)}\n\nRates are flexible and project-based. Reach out at ${siteFacts.contact.email} for inquiries!`,
           topic: "services",
           followUps: [
             { label: "Contact", prompt: "How can I contact you?" },
@@ -1086,129 +1308,58 @@
         };
       }
 
-      if (has(/\b(education|degree|school|college|university)\b/)) {
+      // Education
+      if (wantsEducation) {
         return {
           text: `Education on the site: **${siteFacts.education}**.`,
           topic: "education",
           followUps: [
             { label: "Experience", prompt: "Tell me about your experience." },
             { label: "Skills", prompt: "What are your skills?" },
-            { label: "Projects", prompt: "Show me your projects." }
+            { label: "Certificates", prompt: "What certificates do you have?" }
           ]
         };
       }
 
-      if (has(/\b(cert|certificate|certification|award|awards|achievement|achievements)\b/)) {
-        return {
-          text: `The **Certificates & Awards** section on the site showcases Ferdinand's professional recognitions and achievements. Scroll up in the navigation to explore them.`,
-          topic: "education",
-          followUps: [
-            { label: "Education", prompt: "What is your education?" },
-            { label: "Skills", prompt: "What are your skills?" },
-            { label: "Experience", prompt: "Tell me about your experience." }
-          ]
-        };
-      }
-
-      if (has(/\b(ai|copilot|claude|cursor|cline|codex|antigravity)\b/)) {
+      // AI tools
+      if (wantsAI) {
         return {
           text: `Ferdinand uses modern AI-assisted development tools such as ${siteFacts.aiTools.join(", ")}. These help with drafting, prototyping, and accelerating development while keeping quality high.`,
           topic: "ai",
           followUps: [
-            { label: "Skills", prompt: "What are your skills?" },
-            { label: "Projects", prompt: "Show me your projects." },
-            { label: "Website", prompt: "What can you tell me about this website?" }
-          ]
-        };
-      }
-
-      if (has(/\b(website|site|page|sections|this site|your site)\b/)) {
-        return {
-          text: `This website is a personal portfolio that includes About, Experience, Tech Stack, Projects, Services, Testimonials, and Contact sections. It also includes the Ask Anything chatbot and sound controls for a more interactive experience.`,
-          topic: "website",
-          followUps: [
-            { label: "Experience", prompt: "Tell me about your experience." },
-            { label: "Projects", prompt: "Show me your projects." },
-            { label: "Contact", prompt: "How can I contact you?" }
-          ]
-        };
-      }
-
-      if (has(/\b(testimonial|testimonials|recommendation|review)\b/)) {
-        return {
-          text: `The Testimonials section shares feedback from collaborators and teammates. If you'd like, I can summarize the overall tone of the testimonials in one sentence.`,
-          topic: "testimonials",
-          followUps: [
-            { label: "Projects", prompt: "Show me your projects." },
-            { label: "Experience", prompt: "Tell me about your experience." },
-            { label: "Contact", prompt: "How can I contact you?" }
-          ]
-        };
-      }
-
-      if (has(/\b(hire|hiring|freelance|available|availability|work together|collaborate|work with)\b/)) {
-        return {
-          text: `Ferdinand is open to freelance and collaborative opportunities. You can reach out directly:\n- Email: ${siteFacts.contact.email}\n- Phone: ${siteFacts.contact.phone}\n\nFeel free to describe your project and he'll get back to you.`,
-          topic: "contact",
-          followUps: [
-            { label: "Services", prompt: "What services do you offer?" },
-            { label: "Projects", prompt: "Show me your projects." },
+            { label: "OpenAI Cert", prompt: "Tell me about the OpenAI certificate" },
+            { label: "Anthropic Cert", prompt: "Tell me about the Anthropic certificate" },
             { label: "Skills", prompt: "What are your skills?" }
           ]
         };
       }
 
-      if (has(/\b(rate|rates|pricing|price|cost|how much|quote|fee|fees|charge|charges)\b/)) {
+      // About
+      if (wantsAbout) {
         return {
-          text: `Ferdinand's rates are **flexible and project-based**. For a custom quote, reach out directly:\n- Email: ${siteFacts.contact.email}\n- Phone: ${siteFacts.contact.phone}\n\nDescribe your project and he will get back to you promptly.`,
-          topic: "contact",
+          text: `${siteFacts.name}, also known as **${siteFacts.alias}**, is a ${siteFacts.title} based in ${siteFacts.location}. He has ${siteFacts.experienceYears} of experience building modern digital experiences across design, development, and AI-assisted workflows.`,
+          topic: "about",
           followUps: [
-            { label: "Services", prompt: "What services do you offer?" },
-            { label: "Projects", prompt: "Show me your projects." },
-            { label: "Contact", prompt: "How can I contact you?" }
+            { label: "Certificates", prompt: "What certificates do you have?" },
+            { label: "Hobbies & Interests", prompt: "What are your hobbies and interests?" },
+            { label: "Skills", prompt: "What are your skills?" }
           ]
         };
       }
 
-      if (has(/\b(github|linkedin|instagram|facebook|social|social media|follow)\b/)) {
+      // Website
+      if (has(/\b(website|site|page|sections|this site|your site)\b/)) {
         return {
-          text: `You can find Ferdinand on these platforms:\n- GitHub: https://github.com/festoqufx\n- LinkedIn: https://www.linkedin.com/in/ferdinand-estoque-46797876\n- Instagram: https://www.instagram.com/ravenom_007`,
-          topic: "contact",
-          followUps: [
-            { label: "Contact", prompt: "How can I contact you?" },
-            { label: "Projects", prompt: "Show me your projects." }
-          ]
+          text: `This website is Ferdinand Estoque's portfolio, showcasing his About, Experience, Tech Stack, Projects, Certificates, Hobbies & Interests, Services, Testimonials, and Contact sections.`,
+          topic: "website",
+          followUps: defaultPrompts
         };
       }
 
-      const projectMap = {
-        sudoku: { name: "Sudoku Solver", stack: "React", url: "https://sudoku-solver-raven.vercel.app" },
-        myonlinesite: { name: "MyOnlineSite", stack: "Angular", url: "https://festoque-v1-blkred.vercel.app" },
-        worldstime: { name: "WorldsTime", stack: "Next.js", url: "https://next-world-time-raven-v1.vercel.app" },
-        snake: { name: "Space Snake", stack: "Vue", url: "https://vue-space-snake-raven.vercel.app" },
-        memory: { name: "Memory Matrix", stack: "Angular", url: "https://angular-memory-card-game-raven.vercel.app" },
-        ide: { name: "NEXT IDE", stack: "Next.js", url: "https://next-web-based-ide-raven.vercel.app" },
-        signature: { name: "Digital Signature Pro", stack: "React", url: "https://digital-signature-raven-pro.vercel.app" },
-        dinner: { name: "Whats for Dinner Wheel", stack: "Vue", url: "https://vue-whats-for-dinner-wheel-raven.vercel.app" },
-        echoes: { name: "Echoes Music Player", stack: "Angular", url: "https://festoqufx-github-io-echoes-music-pl.vercel.app" }
-      };
-      const matchedProject = Object.keys(projectMap).find((key) => q.includes(key));
-      if (matchedProject) {
-        const p = projectMap[matchedProject];
-        return {
-          text: `**${p.name}** is built with **${p.stack}**.\nLive demo: ${p.url}\nSource code is also available on GitHub at https://github.com/festoqufx`,
-          topic: "projects",
-          followUps: [
-            { label: "All projects", prompt: "Show me your projects." },
-            { label: "Skills", prompt: "What are your skills?" },
-            { label: "Contact", prompt: "How can I contact you?" }
-          ]
-        };
-      }
-
+      // Fallback: When information is NOT available on the website
       return {
-        text: `I can help with Ferdinand's skills, experience, projects, services, contact details, education, AI tools, or the website itself. Try asking: "What are your skills?", "Show me your projects", or "How can I contact you?"`,
-        topic: "general",
+        text: `I could not find that information on Ferdinand Estoque's website. I can only provide details based on the website's published content, such as his certificates, hobbies, interests, skills, experience, projects, services, education, and contact details.`,
+        topic: "unknown",
         followUps: defaultPrompts
       };
     };
