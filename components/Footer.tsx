@@ -487,8 +487,8 @@ export default function Footer() {
 
         .newsletter-success-box {
           margin-top: 20px;
-          background: rgba(0, 200, 83, 0.12);
-          border: 1px solid rgba(0, 200, 83, 0.4);
+          background: rgb(200 0 0 / 12%);
+          border: 1px solid rgb(200 0 0 / 40%);
           padding: 14px 16px;
           border-radius: 4px;
           font-family: 'Lato', sans-serif;
