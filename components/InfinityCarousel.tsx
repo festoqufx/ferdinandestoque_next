@@ -25,7 +25,7 @@ const rawSlides: SlideItem[] = [
   { id: 14, src: '/assets/img/site/14.jpg', alt: 'Website 14' },
 ]
 
-// If even, clone first item so total is odd (exact behavior of carousel.js)
+// If even, clone first item so total is odd (exact behavior of legacy poster carousel)
 const initialSlides: SlideItem[] =
   rawSlides.length % 2 === 0
     ? [...rawSlides, { ...rawSlides[0], id: rawSlides.length + 1 }]

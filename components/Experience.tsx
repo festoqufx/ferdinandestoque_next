@@ -68,12 +68,12 @@ export default function Experience() {
                         alt="Visa Teleperformance"
                       />
                     </div>
-                    <div className="timeline-year">2025</div>
+                    <div className="timeline-year">2026</div>
                     <h3 className="title">Visa/Teleperformance</h3>
                     <p className="description">
                       <strong>IMPLEMENTATION ANALYST/DIGITAL CONTENT MANAGER</strong>
                       <br />
-                      AEM, Adobe Creative Suite, Bastion Host(SSH/RDP), JIRA, SharePoint, Figma, TFS, Github(CI/CD), Jenkins
+                      AEM, Adobe CC, Bastion Host, JIRA, SharePoint, Figma, TFS, Github, Jenkins
                       <br /> Fulltime
                     </p>
                   </a>
@@ -132,7 +132,7 @@ export default function Experience() {
                 </div>
 
                 {/* NASDAQ */}
-                <div className="timeline">
+                {/* <div className="timeline">
                   <a href="#" className="timeline-content">
                     <div className="timeline-icon">
                       <img
@@ -155,7 +155,7 @@ export default function Experience() {
                       <br /> Contractual
                     </p>
                   </a>
-                </div>
+                </div> */}
 
                 {/* Crosspower Phils */}
                 <div className="timeline">
@@ -175,9 +175,9 @@ export default function Experience() {
                     <div className="timeline-year">2013</div>
                     <h3 className="title">CROSSPOWER PHILS, INC.</h3>
                     <p className="description">
-                      <strong>MULTIMEDIA WEB DESIGNER</strong>
+                      <strong>WEB UI/UX DEVELOPER</strong>
                       <br />
-                      Wordpress, Genesis, Git, Initializr, PHP/Mysql, Bootstrap, HTML5, JS, CSS
+                      Wordpress, Genesis, Github, PHP, Mysql, Bootstrap, Adobe CC
                       <br /> Project based
                     </p>
                   </a>
